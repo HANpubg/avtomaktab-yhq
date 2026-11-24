@@ -1,0 +1,97 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net - default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation for UserProfile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId', 'createdAt']) &&
+        data.keys().hasOnly(['userId', 'email', 'displayName', 'photoURL', 'createdAt', 'updatedAt', 'xp', 'streak', 'testsPassed', 'testsFailed']) &&
+        data.userId == request.auth.uid &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 256)) &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1024)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64)) &&
+        (!('xp' in data) || (data.xp is number && data.xp >= 0)) &&
+        (!('streak' in data) || (data.streak is number && data.streak >= 0)) &&
+        (!('testsPassed' in data) || (data.testsPassed is number && data.testsPassed >= 0)) &&
+        (!('testsFailed' in data) || (data.testsFailed is number && data.testsFailed >= 0));
+    }
+
+    // Validation for UserProgress
+    function isValidUserProgress(data) {
+      return data.keys().hasAll(['userId', 'ticketId', 'score', 'passed', 'completedAt']) &&
+        data.keys().hasOnly(['userId', 'ticketId', 'score', 'totalQuestions', 'mistakesCount', 'passed', 'timeSpentSeconds', 'completedAt']) &&
+        data.userId == request.auth.uid &&
+        data.ticketId is string && data.ticketId.size() <= 64 &&
+        data.score is number && data.score >= 0 && data.score <= 100 &&
+        data.passed is bool &&
+        data.completedAt is string && data.completedAt.size() <= 64 &&
+        (!('totalQuestions' in data) || (data.totalQuestions is number && data.totalQuestions >= 0)) &&
+        (!('mistakesCount' in data) || (data.mistakesCount is number && data.mistakesCount >= 0)) &&
+        (!('timeSpentSeconds' in data) || (data.timeSpentSeconds is number && data.timeSpentSeconds >= 0));
+    }
+
+    // Validation for SavedMistake
+    function isValidSavedMistake(data) {
+      return data.keys().hasAll(['userId', 'questionId', 'savedAt']) &&
+        data.keys().hasOnly(['userId', 'questionId', 'topicId', 'savedAt', 'reviewCount']) &&
+        data.userId == request.auth.uid &&
+        data.questionId is string && data.questionId.size() <= 64 &&
+        data.savedAt is string && data.savedAt.size() <= 64 &&
+        (!('topicId' in data) || (data.topicId is string && data.topicId.size() <= 64)) &&
+        (!('reviewCount' in data) || (data.reviewCount is number && data.reviewCount >= 0));
+    }
+
+    // User profile documents
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false; // Users cannot list other users
+      allow create: if isValidId(userId) && isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isValidId(userId) && isOwner(userId) && isValidUserProfile(incoming()) && incoming().userId == existing().userId && incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(userId) && isOwner(userId);
+
+      // User test progress history
+      match /progress/{progressId} {
+        allow get: if isValidId(progressId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(progressId) && isOwner(userId) && isValidUserProgress(incoming());
+        allow update: if isValidId(progressId) && isOwner(userId) && isValidUserProgress(incoming()) && incoming().userId == existing().userId;
+        allow delete: if isValidId(progressId) && isOwner(userId);
+      }
+
+      // User mistakes notebook
+      match /mistakes/{mistakeId} {
+        allow get: if isValidId(mistakeId) && isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isValidId(mistakeId) && isOwner(userId) && isValidSavedMistake(incoming());
+        allow update: if isValidId(mistakeId) && isOwner(userId) && isValidSavedMistake(incoming()) && incoming().userId == existing().userId;
+        allow delete: if isValidId(mistakeId) && isOwner(userId);
+      }
+    }
+  }
+}

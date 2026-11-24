@@ -1,0 +1,134 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with study statistics and streak",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of the user"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User avatar image URL"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Account initialization ISO timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last updated ISO timestamp"
+        },
+        "xp": {
+          "type": "number",
+          "description": "Experience points earned through tests"
+        },
+        "streak": {
+          "type": "number",
+          "description": "Consecutive days study streak"
+        },
+        "testsPassed": {
+          "type": "number",
+          "description": "Number of passed tickets and exams"
+        },
+        "testsFailed": {
+          "type": "number",
+          "description": "Number of failed tickets and exams"
+        }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "Exam and ticket completion results",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of user"
+        },
+        "ticketId": {
+          "type": "string",
+          "description": "Identifier of the ticket or exam"
+        },
+        "score": {
+          "type": "number",
+          "description": "Number of correct answers"
+        },
+        "totalQuestions": {
+          "type": "number",
+          "description": "Total number of questions"
+        },
+        "mistakesCount": {
+          "type": "number",
+          "description": "Number of mistakes made"
+        },
+        "passed": {
+          "type": "boolean",
+          "description": "Whether the exam or ticket was passed"
+        },
+        "timeSpentSeconds": {
+          "type": "number",
+          "description": "Duration spent on the test in seconds"
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "Completion ISO timestamp"
+        }
+      },
+      "required": ["userId", "ticketId", "score", "passed", "completedAt"]
+    },
+    "SavedMistake": {
+      "title": "SavedMistake",
+      "description": "Saved question where the user made a mistake for targeted review",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Auth UID of the user"
+        },
+        "questionId": {
+          "type": "string",
+          "description": "ID of the mistaken question"
+        },
+        "topicId": {
+          "type": "string",
+          "description": "ID of the topic the question belongs to"
+        },
+        "savedAt": {
+          "type": "string",
+          "description": "Timestamp when mistake was recorded"
+        },
+        "reviewCount": {
+          "type": "number",
+          "description": "Number of times reviewed"
+        }
+      },
+      "required": ["userId", "questionId", "savedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Private profile and test stats for a user"
+    },
+    "/users/{userId}/progress/{progressId}": {
+      "schema": "UserProgress",
+      "description": "Completed test records for the user"
+    },
+    "/users/{userId}/mistakes/{mistakeId}": {
+      "schema": "SavedMistake",
+      "description": "Questions where the user made mistakes"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "AvtoMaktab YHQ - Pravaga Tayyorlov",
+  "description": "O'zbekiston Yo'l Harakati Qoidalari bo'yicha imtihonga tayyorlov ilovasi: mavzulashtirilgan testlar, biletlar, yo'l belgilari va imtihon simulyatori.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
